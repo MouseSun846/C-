@@ -41,3 +41,22 @@
     });
     cout<<handle.get()<<endl;
 ```    
+
+## packaged_task使用
+```
+    // std::packaged_task
+    std::packaged_task<int()> task([]()->int{
+        int i = 0;
+        while (i<3) {
+            cout<<"std::packaged_task "<<i++<<endl;
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+        return i;
+    });
+    // 执行，如果不执行就一直阻塞
+    task();
+
+    // 获取返回值
+    std::future<int> handle = task.get_future();
+    cout<<handle.get()<<endl;
+```
