@@ -32,3 +32,12 @@
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 ```    
+## furtue使用
+```
+    // furture使用
+    std::future<string> handle = std::async([]()->string{
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        return "async";
+    });
+    cout<<handle.get()<<endl;
+```    
