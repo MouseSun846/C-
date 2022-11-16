@@ -36,26 +36,29 @@
 ```
     // furture使用
     std::future<string> handle = std::async([]()->string{
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        cout<<"async threadId:"<<std::this_thread::get_id()<<endl;
+        std::this_thread::sleep_for(std::chrono::seconds(3));
         return "async";
     });
+    cout<<"main threadId:"<<std::this_thread::get_id()<<endl;
     cout<<handle.get()<<endl;
 ```    
 
 ## packaged_task使用
+* 适用与多个线程
 ```
-    // std::packaged_task
+    // // std::packaged_task
     std::packaged_task<int()> task([]()->int{
         int i = 0;
         while (i<3) {
-            cout<<"std::packaged_task "<<i++<<endl;
+            cout<<"packaged_task threadId:"<<std::this_thread::get_id()<<" std::packaged_task "<<i++<<endl;
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
         return i;
     });
     // 执行，如果不执行就一直阻塞
-    task();
-
+    // task();
+    cout<<"main threadId:"<<std::this_thread::get_id()<<endl;
     // 获取返回值
     std::future<int> handle = task.get_future();
     cout<<handle.get()<<endl;
