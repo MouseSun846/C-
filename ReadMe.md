@@ -78,3 +78,16 @@
     future<std::string> future = promise.get_future();
     cout<<future.get()<<endl;
 ```    
+
+## furtue与exception使用
+```
+    std::future<void> future = std::async([]{
+        throw std::exception();
+    });
+    try {
+        future.get();
+    } catch (std::exception& e) {
+    
+    }
+    cout<<"test exception"<<endl;
+```    
