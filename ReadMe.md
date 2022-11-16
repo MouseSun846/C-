@@ -63,3 +63,18 @@
     std::future<int> handle = task.get_future();
     cout<<handle.get()<<endl;
 ```
+
+## promise使用
+```
+    // promise使用
+    std::promise<std::string> promise;
+    cout<<"begin"<<endl;
+    // 必须定义async的返回结果
+    future<void> f = std::async([&promise](){
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        promise.set_value("promise");
+    });
+    cout<<"main threadId:"<<std::this_thread::get_id()<<endl;
+    future<std::string> future = promise.get_future();
+    cout<<future.get()<<endl;
+```    
