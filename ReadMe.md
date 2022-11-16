@@ -23,3 +23,12 @@
     t1.join();
     t2.join();
 ```    
+## 获取随机数
+```
+    mt19937 gen{random_device {}()};
+    uniform_int_distribution<int> dis;
+    while(true){
+        cout<<gen<<endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+```    
