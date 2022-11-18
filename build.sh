@@ -1,5 +1,5 @@
 git add -A
-git commit -m "promise使用"
+git commit -m " 线程安全的队列"
 git push fork master
 # git config --global user.name "MouseSun846"
 # git config --global user.email "3026098675@qq.com"
