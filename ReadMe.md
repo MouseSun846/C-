@@ -158,5 +158,30 @@ public:
   }
 };
 
+```
 
+* 测试Threadqueue
+```
+threadsafe_queue<int> sq;
+// 第六章
+std::future<void> furture = std::async([&](){
+    int i = 0;
+    while (true) {
+        sq.push(i++);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+});
+
+std::future<void> furture1 = std::async([&](){
+    int i = 0;
+    while (true) {
+        cout<<"thradId:"<<std::this_thread::get_id()<<" "<<*sq.wait_and_pop()<<endl;
+    }
+});
+
+while (true)
+{
+    
+    cout<<"thradId:"<<std::this_thread::get_id()<<" "<<*sq.wait_and_pop()<<endl;
+}
 ```
