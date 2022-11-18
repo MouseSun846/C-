@@ -313,4 +313,20 @@ while (true)
 }
 
 ```
+## 无锁同步
+```
+std::atomic_flag flag(0);
+std::function<void()> func = [&]()->void{
+   while(flag.test_and_set(std::memory_order_acquire)){
+      flag.clear(std::memory_order_release);
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+   }
+   cout<<endl<<std::this_thread::get_id()<<endl;
+};
+vector<std::future<void>> vect;
+for(int i = 0;i < 10;i++){
+  vect.push_back(std::async(func));
+}
+while(true);
+```
 
