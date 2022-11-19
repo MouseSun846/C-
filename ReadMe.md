@@ -1,5 +1,5 @@
 ## 多线程交替输出字符 A B
-```
+```c++
  std::mutex mtx;
     std::condition_variable dataCond;
     std::thread t1([&](){
@@ -24,7 +24,7 @@
     t2.join();
 ```    
 ## 获取随机数
-```
+```c++
     mt19937 gen{random_device {}()};
     uniform_int_distribution<int> dis;
     while(true){
@@ -33,7 +33,7 @@
     }
 ```    
 ## furtue使用
-```
+```c++
     // furture使用
     std::future<string> handle = std::async([]()->string{
         cout<<"async threadId:"<<std::this_thread::get_id()<<endl;
@@ -46,7 +46,7 @@
 
 ## packaged_task使用
 * 适用与多个线程
-```
+```c++
     // // std::packaged_task
     std::packaged_task<int()> task([]()->int{
         int i = 0;
@@ -65,7 +65,7 @@
 ```
 
 ## promise使用
-```
+```c++
     // promise使用
     std::promise<std::string> promise;
     cout<<"begin"<<endl;
@@ -80,7 +80,7 @@
 ```    
 
 ## furtue与exception使用
-```
+```c++
     std::future<void> future = std::async([]{
         throw std::exception();
     });
@@ -93,7 +93,7 @@
 ```    
 
 ## 线程安全的队列
-```
+```c++
 template<typename T>
 class threadsafe_queue
 {
@@ -161,7 +161,7 @@ public:
 ```
 
 * 测试Threadqueue
-```
+```c++
 threadsafe_queue<int> sq;
 // 第六章
 std::future<void> furture = std::async([&](){
@@ -187,7 +187,7 @@ while (true)
 ```
 
 ## 线程安全的列表
-```
+```c++
 template<typename T>
 class threadsafe_list
 {
@@ -287,7 +287,7 @@ public:
 ```
 
 * 测试代码
-```
+```c++
 threadsafe_list<int> sList;
 
 std::future<void> furture = std::async([&](){
@@ -314,7 +314,7 @@ while (true)
 
 ```
 ## 无锁同步
-```
+```c++
 std::atomic_flag flag(0);
 std::function<void()> func = [&]()->void{
    while(flag.test_and_set(std::memory_order_acquire)){
@@ -331,7 +331,7 @@ while(true);
 ```
 
 ## 并行版本累加
-```
+```c++
 template <typename Iterator, typename T>
 T parallel_accumulate(Iterator first, Iterator last, T init) {
     unsigned long const length = std::distance(first, last); // 1
@@ -351,7 +351,7 @@ T parallel_accumulate(Iterator first, Iterator last, T init) {
 ```
 
 * 测试代码
-```
+```c++
    int n = 1000000;
     vector<int> vect(n,0);
     mt19937 gen{random_device {}()};
