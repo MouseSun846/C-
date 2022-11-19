@@ -330,3 +330,42 @@ for(int i = 0;i < 10;i++){
 while(true);
 ```
 
+## 并行版本累加
+```
+template <typename Iterator, typename T>
+T parallel_accumulate(Iterator first, Iterator last, T init) {
+    unsigned long const length = std::distance(first, last); // 1
+    unsigned long const max_chunk_size = 25;
+    if (length <= max_chunk_size) {
+        return std::accumulate(first, last, init); // 2
+    } else {
+        Iterator mid_point = first;
+        std::advance(mid_point, length / 2); // 3
+        std::future<T> first_half_result =
+            std::async(parallel_accumulate<Iterator, T>, // 4
+                       first, mid_point, init);
+        T second_half_result = parallel_accumulate(mid_point, last, T()); // 5
+        return first_half_result.get() + second_half_result;              // 6
+    }
+}
+```
+
+* 测试代码
+```
+   int n = 1000000;
+    vector<int> vect(n,0);
+    mt19937 gen{random_device {}()};
+    uniform_int_distribution<int> dis;    
+    int idx = 0;
+    while (n>0) {
+      vect[idx++] = gen() % 1000;
+      n--;
+    }
+
+    std::chrono::milliseconds ms=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+    cout<<"begin: "<<ms.count()<<endl;
+    parallel_accumulate(vect.begin(), vect.end(), 0l);
+    std::chrono::milliseconds ms1=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+    cout<<"end: "<<ms1.count()-ms.count()<<endl;
+
+```
