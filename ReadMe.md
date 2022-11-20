@@ -397,3 +397,106 @@ void parallel_for_each(Iterator first,Iterator last,Func f)
   }
 }
 ```
+## 线程池
+```c++
+class function_wrapper {
+    struct impl_base {
+        virtual void call() = 0;
+        virtual ~impl_base() {}
+    };
+
+    std::unique_ptr<impl_base> impl;
+    template <typename F> struct impl_type : impl_base {
+        F f;
+        impl_type(F&& f_) : f(std::move(f_)) {}
+        void call() { f(); }
+    };
+
+  public:
+    template <typename F>
+    function_wrapper(F&& f) : impl(new impl_type<F>(std::move(f))) {}
+
+    void operator()() { impl->call(); }
+
+    function_wrapper() = default;
+
+    function_wrapper(function_wrapper&& other) : impl(std::move(other.impl)) {}
+
+    function_wrapper& operator=(function_wrapper&& other) {
+        impl = std::move(other.impl);
+        return *this;
+    }
+
+    function_wrapper(const function_wrapper&) = delete;
+    function_wrapper(function_wrapper&) = delete;
+    function_wrapper& operator=(const function_wrapper&) = delete;
+};
+
+class thread_pool {
+    threadsafe_queue<function_wrapper> m_workQqueue; // 使用function_wrapper，而非使用std::function
+    std::atomic_bool m_done;
+    std::vector<std::thread> m_threads;
+    void worker_thread() {
+        while (!m_done) {
+            function_wrapper task;
+            if (m_workQqueue.try_pop(task)) {
+                task();
+            } else {
+                std::this_thread::yield();
+            }
+        }
+    }
+
+  public:
+    thread_pool(unsigned int thread_count)
+        : m_done(false) {
+        // 线程数取硬件并发与用户自定义得最小值
+        thread_count = min(thread_count, std::thread::hardware_concurrency());
+        try {
+            for (unsigned i = 0; i < thread_count; ++i) {
+                m_threads.push_back(
+                    std::thread(&thread_pool::worker_thread, this));
+            }
+        } catch (...) {
+            m_done = true;
+            throw;
+        }
+    }
+    ~thread_pool() { 
+        m_done = true; 
+        for (unsigned int i = 0; i < m_threads.size(); ++i) {
+            // 防止线程泄露
+            if (m_threads[i].joinable())
+                m_threads[i].join();
+        }        
+    }
+
+    template <typename FunctionType>
+    std::future<typename std::result_of<FunctionType()>::type> submit(FunctionType f) {
+        typedef typename std::result_of<FunctionType()>::type result_type; 
+        std::packaged_task<result_type()> task(std::move(f)); 
+        std::future<result_type> res(task.get_future());      
+        m_workQqueue.push(std::move(task));                  
+        return res;                                          
+    }
+};
+```
+
+* 线程池测试
+```c++
+ // 使用g++链接需要注意 g++ -o main ./main.cpp -lpthread
+    // 测试线程池
+    thread_pool threadPool(4);
+    vector<std::future<int>> vect;
+    for(int i = 0;i < 100;i++){
+        std::future<int> task = threadPool.submit([]()-> int {
+            mt19937 gen{random_device{}()};
+            uniform_int_distribution<int> dis;
+            return dis(gen)%100 + dis(gen)%100;
+        });
+        vect.push_back(std::move(task));
+    }
+    for(int i = 0; i < vect.size();i++){
+        cout<<vect[i].get()<<endl;
+    }
+```    
