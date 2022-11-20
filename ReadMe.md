@@ -399,7 +399,7 @@ void parallel_for_each(Iterator first,Iterator last,Func f)
 ```
 ## 线程池
 ```c++
-class function_wrapper {
+class FunctionWrapper {
     struct impl_base {
         virtual void call() = 0;
         virtual ~impl_base() {}
@@ -414,31 +414,31 @@ class function_wrapper {
 
   public:
     template <typename F>
-    function_wrapper(F&& f) : impl(new impl_type<F>(std::move(f))) {}
+    FunctionWrapper(F&& f) : impl(new impl_type<F>(std::move(f))) {}
 
     void operator()() { impl->call(); }
 
-    function_wrapper() = default;
+    FunctionWrapper() = default;
 
-    function_wrapper(function_wrapper&& other) : impl(std::move(other.impl)) {}
+    FunctionWrapper(FunctionWrapper&& other) : impl(std::move(other.impl)) {}
 
-    function_wrapper& operator=(function_wrapper&& other) {
+    FunctionWrapper& operator=(FunctionWrapper&& other) {
         impl = std::move(other.impl);
         return *this;
     }
 
-    function_wrapper(const function_wrapper&) = delete;
-    function_wrapper(function_wrapper&) = delete;
-    function_wrapper& operator=(const function_wrapper&) = delete;
+    FunctionWrapper(const FunctionWrapper&) = delete;
+    FunctionWrapper(FunctionWrapper&) = delete;
+    FunctionWrapper& operator=(const FunctionWrapper&) = delete;
 };
 
-class thread_pool {
-    threadsafe_queue<function_wrapper> m_workQqueue; // 使用function_wrapper，而非使用std::function
+class ThreadPool {
+    threadsafe_queue<FunctionWrapper> m_workQqueue; // 使用function_wrapper，而非使用std::function
     std::atomic_bool m_done;
     std::vector<std::thread> m_threads;
     void worker_thread() {
         while (!m_done) {
-            function_wrapper task;
+            FunctionWrapper task;
             if (m_workQqueue.try_pop(task)) {
                 task();
             } else {
@@ -448,21 +448,21 @@ class thread_pool {
     }
 
   public:
-    thread_pool(unsigned int thread_count)
+    ThreadPool(unsigned int thread_count)
         : m_done(false) {
         // 线程数取硬件并发与用户自定义得最小值
         thread_count = min(thread_count, std::thread::hardware_concurrency());
         try {
             for (unsigned i = 0; i < thread_count; ++i) {
                 m_threads.push_back(
-                    std::thread(&thread_pool::worker_thread, this));
+                    std::thread(&ThreadPool::worker_thread, this));
             }
         } catch (...) {
             m_done = true;
             throw;
         }
     }
-    ~thread_pool() { 
+    ~ThreadPool() { 
         m_done = true; 
         for (unsigned int i = 0; i < m_threads.size(); ++i) {
             // 防止线程泄露
@@ -484,19 +484,23 @@ class thread_pool {
 
 * 线程池测试
 ```c++
- // 使用g++链接需要注意 g++ -o main ./main.cpp -lpthread
+     // 使用g++链接需要注意 g++ -o main ./main.cpp -lpthread
     // 测试线程池
-    thread_pool threadPool(4);
-    vector<std::future<int>> vect;
-    for(int i = 0;i < 100;i++){
-        std::future<int> task = threadPool.submit([]()-> int {
-            mt19937 gen{random_device{}()};
-            uniform_int_distribution<int> dis;
-            return dis(gen)%100 + dis(gen)%100;
-        });
-        vect.push_back(std::move(task));
-    }
-    for(int i = 0; i < vect.size();i++){
-        cout<<vect[i].get()<<endl;
+    {
+        // 如果是在栈上申请内存，在可能导致任务没有执行完，线程就销毁了
+        ThreadPool* threadPool = new ThreadPool(4);
+        if(threadPool != nullptr){
+            vector<std::future<void>> vect;
+            for(int i = 0;i < 100;i++){
+                std::future<void> task = threadPool->submit([i]()->void {
+                    mt19937 gen{random_device{}()};
+                    uniform_int_distribution<int> dis;
+                    cout<< dis(gen)%100 + dis(gen)%100 + i << endl;
+                });
+                vect.push_back(std::move(task));
+            }
+        }
+        delete threadPool;
+        threadPool = nullptr;
     }
 ```    
